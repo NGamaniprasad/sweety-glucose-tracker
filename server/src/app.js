@@ -56,6 +56,7 @@ const { pool } = require("./config/db");
 
 const authRoutes = require("./routes/authRoutes");
 const readingRoutes = require("./routes/readingRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const app = express();
 
@@ -65,14 +66,14 @@ app.use(cors({
 
 app.use(express.json({ limit: "10kb" }));
 
-// Welcome endpoint
+// Basic home route
 app.get("/", (req, res) => {
   res.json({
     message: "Welcome to Sweety Blood Glucose Tracker API",
   });
 });
 
-// PostgreSQL health check
+// Database health check
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -91,13 +92,16 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Authentication APIs
+// Authentication
 app.use("/api/auth", authRoutes);
 
-// Glucose reading APIs
+// Glucose reading CRUD
 app.use("/api/readings", readingRoutes);
 
-// Error handling
+// Daily and monthly reports
+app.use("/api/reports", reportRoutes);
+
+// Handle malformed JSON and other errors
 app.use((error, req, res, next) => {
   console.error("Request error:", error.message);
 
