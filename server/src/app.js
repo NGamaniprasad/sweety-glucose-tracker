@@ -53,7 +53,9 @@ const express = require("express");
 const cors = require("cors");
 
 const { pool } = require("./config/db");
+
 const authRoutes = require("./routes/authRoutes");
+const readingRoutes = require("./routes/readingRoutes");
 
 const app = express();
 
@@ -63,14 +65,14 @@ app.use(cors({
 
 app.use(express.json({ limit: "10kb" }));
 
-// API home
+// Welcome endpoint
 app.get("/", (req, res) => {
   res.json({
     message: "Welcome to Sweety Blood Glucose Tracker API",
   });
 });
 
-// Database health check
+// PostgreSQL health check
 app.get("/api/health", async (req, res) => {
   try {
     await pool.query("SELECT 1");
@@ -80,7 +82,7 @@ app.get("/api/health", async (req, res) => {
       message: "Backend and PostgreSQL are connected",
     });
   } catch (error) {
-    console.error("Health check failed:", error.message);
+    console.error("Health check error:", error.message);
 
     return res.status(503).json({
       status: "error",
@@ -89,18 +91,21 @@ app.get("/api/health", async (req, res) => {
   }
 });
 
-// Authentication API
+// Authentication APIs
 app.use("/api/auth", authRoutes);
 
-// Invalid JSON and other errors
+// Glucose reading APIs
+app.use("/api/readings", readingRoutes);
+
+// Error handling
 app.use((error, req, res, next) => {
+  console.error("Request error:", error.message);
+
   if (error instanceof SyntaxError && error.status === 400) {
     return res.status(400).json({
       message: "Invalid JSON request body.",
     });
   }
-
-  console.error("Request error:", error.message);
 
   return res.status(error.status || 500).json({
     message: error.status && error.status < 500
@@ -109,9 +114,9 @@ app.use((error, req, res, next) => {
   });
 });
 
-// Unknown API paths
+// Unknown routes
 app.use((req, res) => {
-  res.status(404).json({
+  return res.status(404).json({
     message: "API endpoint not found",
   });
 });
